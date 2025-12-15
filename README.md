@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FastMarket - Dutch Auction Marketplace
+
+A Next.js marketplace application with dynamic pricing where product prices decrease daily from a maximum to minimum over a configurable period.
+
+## Features
+
+- **Dutch Auction Pricing**: Product prices automatically decrease each day
+- **User Authentication**: Sign up/sign in with Supabase Auth
+- **Product Management**: Create, view, and delete listings
+- **Image Upload**: Upload product images to Supabase Storage
+- **Real-time Database**: All data stored in Supabase PostgreSQL
+- **Responsive Design**: Dark-themed UI inspired by OpenSea, built with Shadcn UI
+
+## Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS
+- **Backend**: Supabase (Auth, Database, Storage)
+- **UI Components**: Shadcn UI
+- **Forms**: React Hook Form + Zod validation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ installed
+- A Supabase account and project
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Set Up Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** and run the contents of `supabase-schema.sql` to create tables and policies
+3. Verify the `product-images` storage bucket was created
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Get these values from your Supabase project settings → API.
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Price Calculation
 
-## Learn More
+Products have a `min_price`, `max_price`, and `total_days`. The current price is calculated as:
 
-To learn more about Next.js, take a look at the following resources:
+```
+daysElapsed = today - created_at
+currentPrice = maxPrice - ((maxPrice - minPrice) / totalDays) * daysElapsed
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+When `daysElapsed >= totalDays`, the price equals `minPrice`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Database Schema
 
-## Deploy on Vercel
+- **sellers**: User profiles with email and WhatsApp number
+- **products**: Product listings linked to sellers
+- **product-images**: Storage bucket for product images
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See `supabase-schema.sql` for full schema including RLS policies.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Usage
+
+1. **Sign Up**: Create an account at `/auth/signup`
+2. **Create Listing**: Go to Dashboard → Create New Listing
+3. **Upload Image**: Select a product image (optional)
+4. **Set Pricing**: Define min/max prices and days available
+5. **Publish**: Product appears on the home page immediately
+
+## Project Structure
+
+```
+src/
+├── app/                  # Next.js app routes
+│   ├── auth/            # Sign in/sign up pages
+│   ├── dashboard/       # Seller dashboard
+│   └── product/[id]/    # Product details
+├── components/          # Reusable components
+│   ├── ui/             # Shadcn UI components
+│   ├── AuthProvider.tsx
+│   ├── Navbar.tsx
+│   └── ProductCard.tsx
+└── lib/                 # Utilities
+    ├── supabase.ts      # Supabase client
+    ├── database.types.ts
+    └── market-logic.ts   # Price calculation
+```
+
+## License
+
+MIT
