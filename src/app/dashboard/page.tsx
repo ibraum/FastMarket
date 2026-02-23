@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Settings, Trash2, Edit } from "lucide-react";
+import { Plus, Settings, Trash2, Edit, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Table,
@@ -63,6 +63,21 @@ export default function DashboardPage() {
         }
     }
 
+    async function handleToggleStatus(product: Product) {
+        const newStatus = product.status === "available" ? "sold" : "available";
+
+        const { error } = await supabase
+            .from("products")
+            .update({ status: newStatus })
+            .eq("id", product.id);
+
+        if (!error) {
+            setProducts(products.map(p =>
+                p.id === product.id ? { ...p, status: newStatus } : p
+            ));
+        }
+    }
+
     if (authLoading || loading) {
         return (
             <div className="container mx-auto px-4 py-8">
@@ -81,9 +96,11 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/settings">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Settings
+                        </Link>
                     </Button>
                     <Link href="/dashboard/create">
                         <Button>
@@ -133,8 +150,21 @@ export default function DashboardPage() {
                                     <TableCell>{getDaysRemaining(product)} days</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon">
-                                                <Edit className="h-4 w-4" />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                title={product.status === "available" ? "Mark as sold" : "Mark as available"}
+                                                onClick={() => handleToggleStatus(product)}
+                                            >
+                                                {product.status === "available"
+                                                    ? <CheckCircle className="h-4 w-4" />
+                                                    : <RefreshCw className="h-4 w-4" />
+                                                }
+                                            </Button>
+                                            <Button variant="ghost" size="icon" asChild>
+                                                <Link href={`/dashboard/edit/${product.id}`}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Link>
                                             </Button>
                                             <Button
                                                 variant="ghost"

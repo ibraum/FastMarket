@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -9,23 +8,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function SignInPage() {
-    const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
     const [password, setPassword] = useState("");
+    const [confirm, setConfirm] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
 
-    const handleSignIn = async (e: React.FormEvent) => {
+    useEffect(() => {
+        // Supabase handles the token via the URL hash automatically when using SSR client.
+        // Nothing extra needed here — the session is set by the redirect link.
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError(null);
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        if (password !== confirm) {
+            setError("Passwords do not match.");
+            return;
+        }
+
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters.");
+            return;
+        }
+
+        setLoading(true);
+
+        const { error } = await supabase.auth.updateUser({ password });
 
         if (error) {
             setError(error.message);
@@ -39,53 +51,46 @@ export default function SignInPage() {
         <div className="container mx-auto flex items-center justify-center min-h-screen py-8">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Sign In</CardTitle>
+                    <CardTitle>Reset Password</CardTitle>
                     <CardDescription>
-                        Sign in to your seller account to manage your listings.
+                        Enter your new password below.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSignIn} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {error && (
                             <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
                                 {error}
                             </div>
                         )}
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">New Password</Label>
                             <Input
                                 id="password"
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                minLength={6}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Must be at least 6 characters.
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirm">Confirm Password</Label>
+                            <Input
+                                id="confirm"
+                                type="password"
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                required
+                                minLength={6}
                             />
                         </div>
                         <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? "Signing in..." : "Sign In"}
+                            {loading ? "Updating..." : "Update Password"}
                         </Button>
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                            <Link href="/auth/forgot-password" className="text-primary hover:underline">
-                                Forgot password?
-                            </Link>
-                            <span>
-                                Don&apos;t have an account?{" "}
-                                <Link href="/auth/signup" className="text-primary hover:underline">
-                                    Sign up
-                                </Link>
-                            </span>
-                        </div>
                     </form>
                 </CardContent>
             </Card>
